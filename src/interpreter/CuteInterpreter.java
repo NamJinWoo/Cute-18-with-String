@@ -14,13 +14,13 @@ import java.io.File;
 
 public class CuteInterpreter {
 	static HashMap<String, Node> insertT = new HashMap<String, Node>();
-	
+
 	public void insertTable(Node a, Node b) {
 		insertT.put(a.toString(), b);
 	}
-	
+
 	public Node lookupTable(String id) {
-		if(insertT.containsKey(id)) {
+		if (insertT.containsKey(id)) {
 			return insertT.get(id);
 		}
 		return null;
@@ -37,15 +37,13 @@ public class CuteInterpreter {
 		if (rootExpr instanceof IdNode) {
 			Node x = rootExpr;
 			x = lookupTable(x.toString());
-			if(x == null) {
+			if (x == null) {
 				return rootExpr;
-			}
-			else {
+			} else {
 				runExpr(x);
 				return x;
 			}
-		}
-		else if (rootExpr instanceof IntNode)
+		} else if (rootExpr instanceof IntNode)
 			return rootExpr;
 		else if (rootExpr instanceof BooleanNode)
 			return rootExpr;
@@ -70,39 +68,90 @@ public class CuteInterpreter {
 
 	private Node runFunction(FunctionNode operator, ListNode operand) {
 		Node Fx = operand.car();
-		Fx = lookupTable(operand.car().toString());
-		if(Fx == null) {
+		Node Fy = operand.cdr().car();
+		// if (!(operand.car() instanceof IdNode) && !(operand.car() instanceof IntNode)
+		// && !(operand.car() instanceof QuoteNode)) {
+		// if (((ListNode) runQuote(operand)).equals(ListNode.ENDLIST)) {
+		// Fy = null;
+		// }
+		// else {
+		// Fy = lookupTable(operand.cdr().car().toString());
+		// }
+		// }
+		if (operand.car() instanceof IdNode) {
+			Fx = lookupTable(operand.car().toString());
+			if (operand.car() instanceof QuoteNode) {
+				if (((ListNode) runQuote(operand)).equals(ListNode.ENDLIST)) {
+					Fy = null;
+				}
+			} else {
+				if (!(operand.cdr().car() == null)) {
+					Fy = lookupTable(operand.cdr().car().toString());
+				} else {
+					Fy = null;
+				}
+			}
+		} else {
 			Fx = operand.car();
+			if (operand.car() instanceof QuoteNode) {
+				if (runQuote(operand) instanceof ListNode) {
+					if (((ListNode) runQuote(operand)).equals(ListNode.ENDLIST)) {
+						Fy = null;
+					} else {
+						if (!(operand.cdr().car() == null)) {
+							Fy = lookupTable(operand.cdr().car().toString());
+						} else {
+							Fy = null;
+						}
+					}
+				}
+			} 
+			else if (operand.car() instanceof BooleanNode) {
+				Fy = null;
+			}
+			else {
+				if (!(operand.cdr().car() == null)) {
+					Fy = lookupTable(operand.cdr().car().toString());
+				} else {
+					Fy = null;
+				}
+			}
+		}
+
+		if (Fx == null) {
+			Fx = operand.car();
+		}
+		if (Fy == null) {
+			Fy = operand.cdr().car();
 		}
 		switch (operator.value) {// 바꿈.
 		// CAR, CDR, CONS등에 대한 동작 구현
 		case CAR: // (((QuoteNode)Fx).nodeInside())
-			return ((ListNode)(((QuoteNode)Fx).nodeInside())).car();
+			return ((ListNode) (((QuoteNode) Fx).nodeInside())).car();
 		case CDR:
-			return new QuoteNode(((ListNode)(((QuoteNode)Fx).nodeInside())).cdr());
+			return new QuoteNode(((ListNode) (((QuoteNode) Fx).nodeInside())).cdr());
 		case CONS:
 			if ((Node) Fx instanceof QuoteNode) {
-				ListNode a = (ListNode) (((QuoteNode)Fx).nodeInside());
-				ListNode x = (ListNode) ((QuoteNode) operand.cdr().car()).nodeInside();
+				ListNode a = (ListNode) (((QuoteNode) Fx).nodeInside());
+				ListNode x = (ListNode) (((QuoteNode) Fy).nodeInside());
 
 				return new QuoteNode(ListNode.cons(a, x));
 			} else
-				return new QuoteNode(
-						ListNode.cons((Node) Fx, (ListNode) ((QuoteNode) operand.cdr().car()).nodeInside()));
+				return new QuoteNode(ListNode.cons((Node) Fx, (ListNode) ((QuoteNode) Fy).nodeInside()));
 		case NULL_Q:
-			if (((ListNode) (((QuoteNode)Fx).nodeInside())).equals(ListNode.ENDLIST)) {
+			if (((ListNode) runQuote(operand)).equals(ListNode.ENDLIST)) {
 				return BooleanNode.TRUE_NODE;
 			} else {
 				return BooleanNode.FALSE_NODE;
 			}
 		case ATOM_Q:
-			if (((((QuoteNode)Fx).nodeInside())) instanceof ListNode) {
+			if (runQuote(operand) instanceof ListNode) {
 				return BooleanNode.FALSE_NODE;
 			} else
 				return BooleanNode.TRUE_NODE;
 		case EQ_Q:
-			Node x = (((QuoteNode)Fx).nodeInside());
-			Node y = ((QuoteNode) operand.cdr().car()).nodeInside();
+			Node x = (((QuoteNode) Fx).nodeInside());
+			Node y = ((QuoteNode) Fy).nodeInside();
 			if (x.toString().equals(y.toString())) {
 				return BooleanNode.TRUE_NODE;
 			} else
@@ -118,7 +167,7 @@ public class CuteInterpreter {
 			}
 			return null;
 		case NOT:
-			if (runExpr(Fx).equals(BooleanNode.TRUE_NODE)) {
+			if (runExpr(operand.car()).equals(BooleanNode.TRUE_NODE)) {
 				return BooleanNode.FALSE_NODE;
 			} else
 				return BooleanNode.TRUE_NODE;
@@ -126,10 +175,9 @@ public class CuteInterpreter {
 			if (Fx instanceof ListNode || Fx instanceof QuoteNode) {
 				return null;
 			} else {
-				if(operand.cdr().car() instanceof QuoteNode) {
+				if (operand.cdr().car() instanceof QuoteNode) {
 					insertTable(Fx, operand.cdr().car());
-				}
-				else {
+				} else {
 					insertTable(Fx, runExpr(operand.cdr().car()));
 				}
 			}
@@ -146,17 +194,17 @@ public class CuteInterpreter {
 
 		Node x = list.cdr().car();
 		Node y = list.cdr().cdr().car();
-		
+
 		x = lookupTable(x.toString());
 		y = lookupTable(y.toString());
-		
-		if(x == null) {
+
+		if (x == null) {
 			x = list.cdr().car();
-		}
-		else if (y == null) {
+		} 
+		if (y == null) {
 			y = list.cdr().cdr().car();
 		}
-		
+
 		// 구현과정에서 필요한 변수 및 함수 작업 가능
 		switch (operator.value) {
 
