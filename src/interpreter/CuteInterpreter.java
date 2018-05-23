@@ -16,7 +16,7 @@ public class CuteInterpreter {
 	static HashMap<String, Node> insertT = new HashMap<String, Node>();
 
 	public void insertTable(Node a, Node b) {
-		insertT.put(a.toString(), b);
+			insertT.put(a.toString(), b);
 	}
 
 	public Node lookupTable(String id) {
@@ -69,15 +69,7 @@ public class CuteInterpreter {
 	private Node runFunction(FunctionNode operator, ListNode operand) {
 		Node Fx = operand.car();
 		Node Fy = operand.cdr().car();
-		// if (!(operand.car() instanceof IdNode) && !(operand.car() instanceof IntNode)
-		// && !(operand.car() instanceof QuoteNode)) {
-		// if (((ListNode) runQuote(operand)).equals(ListNode.ENDLIST)) {
-		// Fy = null;
-		// }
-		// else {
-		// Fy = lookupTable(operand.cdr().car().toString());
-		// }
-		// }
+		
 		if (operand.car() instanceof IdNode) {
 			Fx = lookupTable(operand.car().toString());
 			if (operand.car() instanceof QuoteNode) {
@@ -139,7 +131,7 @@ public class CuteInterpreter {
 			} else
 				return new QuoteNode(ListNode.cons((Node) Fx, (ListNode) ((QuoteNode) Fy).nodeInside()));
 		case NULL_Q:
-			if (((ListNode) runQuote(operand)).equals(ListNode.ENDLIST)) {
+			if (((ListNode) (((QuoteNode)Fx).nodeInside())).equals(ListNode.ENDLIST)) {
 				return BooleanNode.TRUE_NODE;
 			} else {
 				return BooleanNode.FALSE_NODE;
@@ -176,9 +168,9 @@ public class CuteInterpreter {
 				return null;
 			} else {
 				if (operand.cdr().car() instanceof QuoteNode) {
-					insertTable(Fx, operand.cdr().car());
+					insertTable(operand.car(), operand.cdr().car());
 				} else {
-					insertTable(Fx, runExpr(operand.cdr().car()));
+					insertTable(operand.car(), runExpr(operand.cdr().car()));
 				}
 			}
 		default:

@@ -10,7 +10,6 @@ public class ParserMain {
 
 	public static void main(String[] args) {
 		Scanner input = new Scanner(System.in);
-		
 		while(true) {
 			System.out.print(">  ");
 			String x = input.nextLine();
