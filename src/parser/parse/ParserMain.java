@@ -21,8 +21,5 @@ public class ParserMain {
 			NodePrinter.getPrinter(System.out).prettyPrint(resultNode);
 			System.out.println("");
 		}
-		//ClassLoader cloader = CuteInterpreter.class.getClassLoader();
-		//File file = new File(cloader.getResource("parser/parse/as07.txt").getFile());
-		
 	}
 }

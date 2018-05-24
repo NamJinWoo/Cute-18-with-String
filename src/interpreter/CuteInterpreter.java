@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
+import lexer.TokenType;
 import parser.parse.NodePrinter;
 
 import java.io.File;
@@ -69,6 +70,10 @@ public class CuteInterpreter {
 			if (x == null) {
 				return list;
 			} else {
+				if(((FunctionNode)(((ListNode)x).car())).value.equals(FunctionNode.FunctionType.LAMBDA)) {
+					System.out.println("!!!");
+					return ((ListNode)x).cdr().cdr().car();
+				}
 				runExpr(x);
 				return x;
 			}
@@ -84,9 +89,9 @@ public class CuteInterpreter {
 			if (operand.car() instanceof QuoteNode) {
 				if (((ListNode) runQuote(operand)).equals(ListNode.ENDLIST)) {
 					Fy = null;
-				}
+				} //이 경우는 애초에 cdr 이 없다고 가정. 예를들어 null? atom? 그래서 그냥 Fy는 null처리
 			} else {
-				if (!(operand.cdr().car() == null)) {
+				if (!(operand.cdr().car() == null)) {//id노드일때만 찾는걸로 설정
 					Fy = lookupTable(operand.cdr().car().toString());
 				} else {
 					Fy = null;
@@ -161,7 +166,7 @@ public class CuteInterpreter {
 			ListNode c = operand;
 			while (!c.equals(ListNode.ENDLIST)) {
 				if (runExpr(((ListNode) c.car()).car()).equals(BooleanNode.TRUE_NODE)) {
-					return ((ListNode) c.car()).cdr().car();
+					return runExpr(((ListNode) c.car()).cdr().car());
 				} else {
 					c = c.cdr();
 				}
@@ -172,11 +177,14 @@ public class CuteInterpreter {
 				return BooleanNode.FALSE_NODE;
 			} else
 				return BooleanNode.TRUE_NODE;
+		case LAMBDA:
+			System.out.println("???");
+			return runExpr(Fy);
 		case DEFINE:
 			if (Fx instanceof ListNode || Fx instanceof QuoteNode) {
 				return null;
 			} else {
-				if (operand.cdr().car() instanceof QuoteNode) {
+				if (operand.cdr().car() instanceof QuoteNode || operand.cdr().car() instanceof ListNode) {
 					insertTable(operand.car(), operand.cdr().car());
 				} else {
 					insertTable(operand.car(), runExpr(operand.cdr().car()));
