@@ -17,6 +17,7 @@ public class ParserMain {
 			Node parseTree = cuteParser.parseExpr();
 			CuteInterpreter i = new CuteInterpreter();
 			Node resultNode = i.runExpr(parseTree);
+			System.out.print("...");
 			NodePrinter.getPrinter(System.out).prettyPrint(resultNode);
 			System.out.println("");
 		}

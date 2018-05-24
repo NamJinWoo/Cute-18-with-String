@@ -63,7 +63,16 @@ public class CuteInterpreter {
 		if (list.car() instanceof BinaryOpNode) {
 			return runBinary(list);
 		}
-		return list;
+		else {
+			Node x = list.car();
+			x = lookupTable(x.toString());
+			if (x == null) {
+				return list;
+			} else {
+				runExpr(x);
+				return x;
+			}
+		}
 	}
 
 	private Node runFunction(FunctionNode operator, ListNode operand) {
