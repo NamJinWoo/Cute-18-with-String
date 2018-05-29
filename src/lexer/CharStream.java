@@ -21,7 +21,6 @@ class CharStream {
 		if ( cache != null ) {
 			char ch = cache;
 			cache = null;
-			
 			return Char.of(ch);
 		}
 		else {

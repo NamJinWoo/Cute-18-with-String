@@ -17,10 +17,10 @@ public class CuteInterpreter {
 	static HashMap<String, Node> insertT = new HashMap<String, Node>();
 
 	public void insertTable(Node a, Node b) {
-			insertT.put(a.toString(), b);
+		insertT.put(a.toString(), b);
 	}
 
-	public Node lookupTable(String id) {
+	public Node lookupTable(String id) { // ( ( lambda ( x ) ( + x 1 ) ) 1 )
 		if (insertT.containsKey(id)) {
 			return insertT.get(id);
 		}
@@ -40,6 +40,8 @@ public class CuteInterpreter {
 			x = lookupTable(x.toString());
 			if (x == null) {
 				return rootExpr;
+			} else if (x instanceof ListNode) {
+				return runExpr(x);
 			} else {
 				runExpr(x);
 				return x;
@@ -50,13 +52,29 @@ public class CuteInterpreter {
 			return rootExpr;
 		else if (rootExpr instanceof ListNode)
 			return runList((ListNode) rootExpr);
+		else if (rootExpr instanceof QuoteNode)
+			return rootExpr;
 		else
 			errorLog("run Expr error");
 		return null;
 	}
 
 	private Node runList(ListNode list) {
-		if (list.equals(ListNode.EMPTYLIST))
+		ListNode lambda = list;
+		while (!(lambda.equals(ListNode.ENDLIST))) {
+			if ((lambda).car() instanceof IdNode) {
+				lambda = (ListNode) lookupTable(lambda.car().toString());
+				if (lambda == null) {
+					lambda = list.cdr();
+				}
+				break;
+			} else {
+				lambda = lambda.cdr();
+			}
+		}
+		// Node lambda = lookupTable(list.car().toString());
+
+		if (list.equals(ListNode.EMPTYLIST) || list.equals(ListNode.ENDLIST))
 			return list;
 		if (list.car() instanceof FunctionNode) {
 			return runFunction((FunctionNode) list.car(), list.cdr());
@@ -64,142 +82,141 @@ public class CuteInterpreter {
 		if (list.car() instanceof BinaryOpNode) {
 			return runBinary(list);
 		}
-		else {
-			Node x = list.car();
-			x = lookupTable(x.toString());
-			if (x == null) {
-				return list;
-			} else {
-				if(((FunctionNode)(((ListNode)x).car())).value.equals(FunctionNode.FunctionType.LAMBDA)) {
-					System.out.println("!!!");
-					return ((ListNode)x).cdr().cdr().car();
+		if (list.car() instanceof ListNode) {
+			if (list.car() instanceof FunctionNode) {
+				ListNode x = (ListNode) list.car();
+				IntNode y = (IntNode) list.cdr().car();
+				if (((FunctionNode) x.car()).value.equals(FunctionNode.FunctionType.LAMBDA)) {
+					insertTable(((ListNode) x.cdr().car()).car(), y);
+					return runFunction(/* new FunctionNode(TokenType.LAMBDA) */(FunctionNode) x.car(), x.cdr());
 				}
-				runExpr(x);
-				return x;
 			}
+			if (lambda instanceof ListNode) {
+
+				if (!(((ListNode) lambda).car() instanceof FunctionNode)) {
+					Node rl = ListNode.ENDLIST, rl1 = ListNode.ENDLIST, rl2 = ListNode.ENDLIST;
+					if (list != ListNode.ENDLIST) {
+						if (list.car() != ListNode.ENDLIST) {
+							rl1 = runExpr(list.car());
+						}
+						if (list.cdr() != ListNode.ENDLIST) {
+							rl2 = runExpr(list.cdr());
+						}
+					}
+					rl = ListNode.cons(rl1, (ListNode) rl2);
+					return (ListNode) rl;
+				}
+				if (((FunctionNode) ((ListNode) lambda).car()).value.equals(FunctionNode.FunctionType.LAMBDA)) {
+					ListNode x = (ListNode) lambda;
+					IntNode y = (IntNode) list.cdr().car();
+					insertTable(((ListNode) x.cdr().car()).car(), y);
+					return runFunction((FunctionNode) ((ListNode) lambda).car(), x.cdr());
+				}
+			}
+			return list;
 		}
+		
+		return list;
 	}
 
 	private Node runFunction(FunctionNode operator, ListNode operand) {
 		Node Fx = operand.car();
 		Node Fy = operand.cdr().car();
-		
-		if (operand.car() instanceof IdNode) {
-			Fx = lookupTable(operand.car().toString());
-			if (operand.car() instanceof QuoteNode) {
-				if (((ListNode) runQuote(operand)).equals(ListNode.ENDLIST)) {
-					Fy = null;
-				} //¿Ã ∞ÊøÏ¥¬ æ÷√ ø° cdr ¿Ã æ¯¥Ÿ∞Ì ∞°¡§. øπ∏¶µÈæÓ null? atom? ±◊∑°º≠ ±◊≥… Fy¥¬ null√≥∏Æ
-			} else {
-				if (!(operand.cdr().car() == null)) {//id≥ÎµÂ¿œ∂ß∏∏ √£¥¬∞…∑Œ º≥¡§
-					Fy = lookupTable(operand.cdr().car().toString());
-				} else {
-					Fy = null;
-				}
-			}
-		} else {
-			Fx = operand.car();
-			if (operand.car() instanceof QuoteNode) {
-				if (runQuote(operand) instanceof ListNode) {
-					if (((ListNode) runQuote(operand)).equals(ListNode.ENDLIST)) {
-						Fy = null;
-					} else {
-						if (!(operand.cdr().car() == null)) {
-							Fy = lookupTable(operand.cdr().car().toString());
-						} else {
-							Fy = null;
-						}
-					}
-				}
-			} 
-			else if (operand.car() instanceof BooleanNode) {
-				Fy = null;
-			}
-			else {
-				if (!(operand.cdr().car() == null)) {
-					Fy = lookupTable(operand.cdr().car().toString());
-				} else {
-					Fy = null;
-				}
+		if (Fx instanceof IdNode) {
+			switch (operator.value) {
+			case DEFINE:
+				break;
+			default:
+				Fx = lookupTable(Fx.toString());
 			}
 		}
-
-		if (Fx == null) {
-			Fx = operand.car();
+		if (Fy instanceof IdNode) {
+			Fy = lookupTable(Fy.toString());
 		}
-		if (Fy == null) {
-			Fy = operand.cdr().car();
-		}
-		switch (operator.value) {// πŸ≤ﬁ.
-		// CAR, CDR, CONSµÓø° ¥Î«— µø¿€ ±∏«ˆ
-		case CAR: // (((QuoteNode)Fx).nodeInside())
-			return ((ListNode) (((QuoteNode) Fx).nodeInside())).car();
+		Fy = ListNode.cons(Fy, ListNode.ENDLIST);
+		ListNode op = ListNode.cons(Fx, (ListNode) Fy);
+		switch (operator.value) {
+		// CAR, CDR, CONSÔøΩÓø° ÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩ
+		case CAR:
+			ListNode ln1 = (ListNode) runQuote(op);
+			return ln1.car();
 		case CDR:
-			return new QuoteNode(((ListNode) (((QuoteNode) Fx).nodeInside())).cdr());
+			ListNode ln2 = (ListNode) runQuote(op);
+			QuoteNode qn1 = new QuoteNode(runList(ln2.cdr()));
+			return qn1;
 		case CONS:
-			if ((Node) Fx instanceof QuoteNode) {
-				ListNode a = (ListNode) (((QuoteNode) Fx).nodeInside());
-				ListNode x = (ListNode) (((QuoteNode) Fy).nodeInside());
-
-				return new QuoteNode(ListNode.cons(a, x));
-			} else
-				return new QuoteNode(ListNode.cons((Node) Fx, (ListNode) ((QuoteNode) Fy).nodeInside()));
-		case NULL_Q:
-			if (((ListNode) (((QuoteNode)Fx).nodeInside())).equals(ListNode.ENDLIST)) {
-				return BooleanNode.TRUE_NODE;
-			} else {
-				return BooleanNode.FALSE_NODE;
+			Node head = op.car();
+			if (head instanceof QuoteNode) {
+				head = ((QuoteNode) head).nodeInside();
 			}
-		case ATOM_Q:
-			if (runQuote(operand) instanceof ListNode) {
-				return BooleanNode.FALSE_NODE;
-			} else
-				return BooleanNode.TRUE_NODE;
-		case EQ_Q:
-			Node x = (((QuoteNode) Fx).nodeInside());
-			Node y = ((QuoteNode) Fy).nodeInside();
-			if (x.toString().equals(y.toString())) {
-				return BooleanNode.TRUE_NODE;
-			} else
-				return BooleanNode.FALSE_NODE;
+			ListNode tail = op.cdr();
+			Node n1 = runQuote(tail);
+			ListNode ln3 = ListNode.cons(head, (ListNode) n1);
+			QuoteNode qn2 = new QuoteNode(ln3);
+			return qn2;
 		case COND:
-			ListNode c = operand;
-			while (!c.equals(ListNode.ENDLIST)) {
-				if (runExpr(((ListNode) c.car()).car()).equals(BooleanNode.TRUE_NODE)) {
-					return runExpr(((ListNode) c.car()).cdr().car());
+			while (!op.equals(ListNode.ENDLIST)) {
+				if (runExpr(((ListNode) op.car()).car()).equals(BooleanNode.TRUE_NODE)) {
+					return runExpr(((ListNode) op.car()).cdr().car());
 				} else {
-					c = c.cdr();
+					op = op.cdr();
 				}
 			}
 			return null;
 		case NOT:
-			if (runExpr(operand.car()).equals(BooleanNode.TRUE_NODE)) {
+			Node not = op.car();
+			if (not instanceof ListNode) {
+				not = runBinary((ListNode) not);
+			}
+			if (not == BooleanNode.TRUE_NODE) {
 				return BooleanNode.FALSE_NODE;
-			} else
-				return BooleanNode.TRUE_NODE;
-		case LAMBDA:
-			System.out.println("???");
-			return runExpr(Fy);
-		case DEFINE:
-			if (Fx instanceof ListNode || Fx instanceof QuoteNode) {
-				return null;
 			} else {
-				if (operand.cdr().car() instanceof QuoteNode || operand.cdr().car() instanceof ListNode) {
-					insertTable(operand.car(), operand.cdr().car());
+				return BooleanNode.TRUE_NODE;
+			}
+		case NULL_Q:
+			Node nq = runQuote(op);
+			if (((ListNode) nq).car() == null && ((ListNode) nq).cdr() == null) {
+				return BooleanNode.TRUE_NODE;
+			} else {
+				return BooleanNode.FALSE_NODE;
+			}
+		case EQ_Q:
+			Node eq1 = op.car();
+			Node eq2 = ((QuoteNode) op.cdr().car()).nodeInside();
+			if (eq1.toString().equals(eq2.toString())) {
+				return BooleanNode.TRUE_NODE;
+			} else
+				return BooleanNode.FALSE_NODE;
+		case ATOM_Q:
+			Node aq = runQuote(op);
+			if (aq instanceof ListNode) {
+				return BooleanNode.FALSE_NODE;
+			} else {
+				return BooleanNode.TRUE_NODE;
+			}
+		case LAMBDA:
+			return runBinary((ListNode) op.cdr().car());
+		case DEFINE:
+			Node x = op.car();
+			Node y = op.cdr().car();
+			if (y instanceof ListNode) {
+				if (((ListNode) y).car() instanceof FunctionNode) {
+					insertTable(x, y);
 				} else {
-					insertTable(operand.car(), runExpr(operand.cdr().car()));
+					y = runExpr(y);
 				}
 			}
+			insertTable(x, y);
 		default:
 			break;
 		}
-		System.out.println(insertT);
-
+		//System.out.println(insertT);
 		return null;
 	}
 
 	private Node runBinary(ListNode list) {
-		BinaryOpNode operator = (BinaryOpNode) list.car(); // πŸ≤ﬁ.
+		//System.out.println(insertT);
+		BinaryOpNode operator = (BinaryOpNode) list.car(); // Î∞îÍøà.
 
 		Node x = list.cdr().car();
 		Node y = list.cdr().cdr().car();
@@ -209,15 +226,15 @@ public class CuteInterpreter {
 
 		if (x == null) {
 			x = list.cdr().car();
-		} 
+		}
 		if (y == null) {
 			y = list.cdr().cdr().car();
 		}
 
-		// ±∏«ˆ∞˙¡§ø°º≠ « ø‰«— ∫Øºˆ π◊ «‘ºˆ ¿€æ˜ ∞°¥…
+		// Íµ¨ÌòÑÍ≥ºÏ†ïÏóêÏÑú ÌïÑÏöîÌïú Î≥ÄÏàò Î∞è Ìï®Ïàò ÏûëÏóÖ Í∞ÄÎä•
 		switch (operator.value) {
 
-		// +,-,/ µÓø° ¥Î«— πŸ¿Ã≥ ∏Æ ø¨ªÍ µø¿€ ±∏«ˆ
+		// +,-,/ Îì±Ïóê ÎåÄÌïú Î∞îÏù¥ÎÑàÎ¶¨ Ïó∞ÏÇ∞ ÎèôÏûë Íµ¨ÌòÑ
 		case PLUS:
 			return new IntNode(Integer.toString(((IntNode) runExpr(x)).value + ((IntNode) runExpr(y)).value));
 		case MINUS:

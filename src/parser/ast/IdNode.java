@@ -1,7 +1,7 @@
 package parser.ast;
 
 public class IdNode implements ValueNode {
-	String idString;
+	public String idString;
 
 	public IdNode(String text) {
 		idString = text;
