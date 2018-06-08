@@ -45,7 +45,7 @@ public class NodePrinter {
 		if (node == null)
 			return;
 		if (node instanceof ListNode) {
-			ps.print("(");
+			ps.print(" (");
 			printNode((ListNode) node);
 			ps.print(" )");
 		} else if (node instanceof QuoteNode) {
