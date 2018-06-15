@@ -52,8 +52,10 @@ public class NodePrinter {
 			printNode((QuoteNode) node);
 		} else {
 			String temp = node.toString();
+			//System.out.println(temp);
 			StringTokenizer st = new StringTokenizer(temp, " ");
 			st.nextToken();
+//			System.out.println()));
 			ps.print(" " + st.nextToken());
 		}
 	}

@@ -82,6 +82,6 @@ public class FunctionNode implements Node { // binaryOpNode클래스를 보고 참고해�
 	@Override
 	/*여기도 binaryOpNode부분과 똑같이하면된다.*/
 	public String toString() {
-		return value.name();// 내용 채우기
+		return "Function: "+value.name().toLowerCase();// 내용 채우기
 	}	
 }

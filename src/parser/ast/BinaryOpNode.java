@@ -65,6 +65,6 @@ public class BinaryOpNode implements Node {
 
 	@Override
 	public String toString() {
-		return value.name();
+		return "BinaryOp: "+value.name();
 	}
 }

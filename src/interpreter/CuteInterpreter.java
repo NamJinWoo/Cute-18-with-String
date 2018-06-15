@@ -108,6 +108,7 @@ public class CuteInterpreter {
 		}
 		if (list.car() instanceof IdNode) {
 			ListNode lambda = list;
+			
 			while (!(lambda.equals(ListNode.ENDLIST))) {
 				if ((lambda).car() instanceof IdNode) {
 					lambda = (ListNode) lookupTable(lambda.car().toString());
