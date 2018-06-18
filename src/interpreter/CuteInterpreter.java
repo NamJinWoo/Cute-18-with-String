@@ -15,6 +15,7 @@ import java.io.File;
 
 public class CuteInterpreter {
 	static HashMap<String, Node> insertT = new HashMap<String, Node>();
+	String lambdakey;
 
 	public void insertTable(Node a, Node b) {
 		insertT.put(a.toString(), b);
@@ -65,7 +66,8 @@ public class CuteInterpreter {
 		if (list.equals(ListNode.EMPTYLIST) || list.equals(ListNode.ENDLIST))
 			return list;
 		if (list.car() instanceof FunctionNode) {
-			if(((FunctionNode)list.car()).value.equals(FunctionNode.FunctionType.LAMBDA)){
+			if (((FunctionNode) list.car()).value.equals(FunctionNode.FunctionType.LAMBDA)) {
+
 				return list;
 			}
 			return runFunction((FunctionNode) list.car(), list.cdr());
@@ -74,11 +76,12 @@ public class CuteInterpreter {
 			return runBinary(list);
 		}
 		if (list.car() instanceof ListNode) {
-			if (((ListNode)list.car()).car() instanceof FunctionNode) {
+			if (((ListNode) list.car()).car() instanceof FunctionNode) {
 				ListNode x = (ListNode) list.car();
 				IntNode y = (IntNode) list.cdr().car();
 				if (((FunctionNode) x.car()).value.equals(FunctionNode.FunctionType.LAMBDA)) {
 					insertTable(((ListNode) x.cdr().car()).car(), y);
+					lambdakey = ((ListNode) x.cdr().car()).car().toString();
 					return runFunction(/* new FunctionNode(TokenType.LAMBDA) */(FunctionNode) x.car(), x.cdr());
 				}
 			}
@@ -101,6 +104,7 @@ public class CuteInterpreter {
 					ListNode x = (ListNode) list;
 					IntNode y = (IntNode) list.cdr().car();
 					insertTable(((ListNode) x.cdr().car()).car(), y);
+					lambdakey = ((ListNode) x.cdr().car()).car().toString();
 					return runFunction((FunctionNode) ((ListNode) list).car(), x.cdr());
 				}
 			}
@@ -108,7 +112,7 @@ public class CuteInterpreter {
 		}
 		if (list.car() instanceof IdNode) {
 			ListNode lambda = list;
-			
+
 			while (!(lambda.equals(ListNode.ENDLIST))) {
 				if ((lambda).car() instanceof IdNode) {
 					lambda = (ListNode) lookupTable(lambda.car().toString());
@@ -124,8 +128,10 @@ public class CuteInterpreter {
 				ListNode x = (ListNode) lambda;
 				IntNode y = (IntNode) list.cdr().car();
 				insertTable(((ListNode) x.cdr().car()).car(), y);
+				lambdakey = ((ListNode) x.cdr().car()).car().toString();
 				return runFunction((FunctionNode) ((ListNode) lambda).car(), x.cdr());
 			}
+			System.out.println(insertT);
 			return runExpr(list.car());
 		}
 
@@ -234,6 +240,9 @@ public class CuteInterpreter {
 		case DEFINE:
 			Node x = op.car();
 			Node y = op.cdr().car();
+			if (((FunctionNode) ((ListNode) y).car()).value.equals(FunctionNode.FunctionType.LAMBDA)) {
+				runExpr(y);
+			}
 			if (y instanceof ListNode) {
 				if (((ListNode) y).car() instanceof FunctionNode) {
 					insertTable(x, y);
@@ -253,6 +262,9 @@ public class CuteInterpreter {
 		// System.out.println(insertT);
 		BinaryOpNode operator = (BinaryOpNode) list.car(); // 바꿈.
 
+		Node newTrue = BooleanNode.TRUE_NODE;
+		Node newFalse = BooleanNode.FALSE_NODE;
+
 		Node x = list.cdr().car();
 		Node y = list.cdr().cdr().car();
 
@@ -271,28 +283,46 @@ public class CuteInterpreter {
 
 		// +,-,/ 등에 대한 바이너리 연산 동작 구현
 		case PLUS:
-			return new IntNode(Integer.toString(((IntNode) runExpr(x)).value + ((IntNode) runExpr(y)).value));
+			Node newplus = new IntNode(Integer.toString(((IntNode) runExpr(x)).value + ((IntNode) runExpr(y)).value));
+			insertT.remove(lambdakey);
+			System.out.println(insertT);
+			return newplus;
 		case MINUS:
-			return new IntNode(Integer.toString(((IntNode) runExpr(x)).value - ((IntNode) runExpr(y)).value));
+			Node newminus = new IntNode(Integer.toString(((IntNode) runExpr(x)).value - ((IntNode) runExpr(y)).value));
+			insertT.remove(lambdakey);
+			return newminus;
 		case DIV:
-			return new IntNode(Integer.toString(((IntNode) runExpr(x)).value / ((IntNode) runExpr(y)).value));
+			Node newdiv = new IntNode(Integer.toString(((IntNode) runExpr(x)).value / ((IntNode) runExpr(y)).value));
+			insertT.remove(lambdakey);
+			return newdiv;
 		case TIMES:
-			return new IntNode(Integer.toString(((IntNode) runExpr(x)).value * ((IntNode) runExpr(y)).value));
+			Node newtimes = new IntNode(Integer.toString(((IntNode) runExpr(x)).value * ((IntNode) runExpr(y)).value));
+			insertT.remove(lambdakey);
+			return newtimes;
 		case LT:
 			if (((IntNode) runExpr(x)).value < ((IntNode) runExpr(y)).value) {
-				return BooleanNode.TRUE_NODE;
-			} else
-				return BooleanNode.FALSE_NODE;
+				insertT.remove(lambdakey);
+				return newTrue;
+			} else {
+				insertT.remove(lambdakey);
+				return newFalse;
+			}
+				
 		case GT:
 			if (((IntNode) runExpr(x)).value > ((IntNode) runExpr(y)).value) {
-				return BooleanNode.TRUE_NODE;
-			} else
-				return BooleanNode.FALSE_NODE;
+				insertT.remove(lambdakey);
+				return newTrue;
+			}else {
+				insertT.remove(lambdakey);
+				return newFalse;
+			}
 		case EQ:
 			if (((IntNode) runExpr(x)).value.equals(((IntNode) runExpr(y)).value)) {
-				return BooleanNode.TRUE_NODE;
-			} else
-				return BooleanNode.FALSE_NODE;
+				return newTrue;
+			} else {
+				insertT.remove(lambdakey);
+				return newFalse;
+			}
 
 		default:
 			break;
